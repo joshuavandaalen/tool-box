@@ -1,0 +1,14 @@
+[package]
+name = "text-sender"
+version = "0.1.0"
+edition = "2024"
+description = "A TUI app that takes a block of text and sends it to an API endpoint"
+
+[dependencies]
+ratatui = "0.30.0"
+crossterm = { version = "0.29.0", features = ["event-stream"] }
+tokio = { version = "1.50.0", features = ["full"] }
+reqwest = { version = "0.13.2", features = ["json"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+anyhow = "1.0"
