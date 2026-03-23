@@ -1,0 +1,32 @@
+name: Changelog Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  changelog-updated:
+    name: Changelog updated
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check that CHANGELOG.md was modified
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const files = await github.paginate(
+              github.rest.pulls.listFiles,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number,
+                per_page: 100,
+              }
+            );
+
+            const changed = files.some(f => f.filename === 'CHANGELOG.md');
+
+            if (!changed) {
+              core.setFailed(
+                'CHANGELOG.md was not updated. Please add an entry describing your changes.'
+              );
+            }

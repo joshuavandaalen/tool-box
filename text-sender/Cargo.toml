@@ -1,0 +1,14 @@
+[package]
+name = "text-sender"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "A TUI app that takes a block of text and sends it to an API endpoint"
+
+[dependencies]
+ratatui = "0.30.0"
+crossterm = "0.29.0"
+tokio = { version = "1.50.0", features = ["full"] }
+reqwest = "0.13.2"
+serde_json = "1.0"
+anyhow = "1.0"
