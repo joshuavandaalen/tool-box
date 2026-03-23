@@ -7,15 +7,11 @@ A terminal user interface (TUI) application that lets you compose a block of tex
 This project was made possible by the maintainers of the following dependencies
 
 - **[anyhow](https://docs.rs/anyhow)** — Error object for idiomatic error handling
-- **[base64](https://docs.rs/base64)** — Base 64 encoding
-- **[chrono](https://docs.rs/chrono)** — Date + time parsing and manipulating
-- **[colored](https://docs.rs/colored)** — Handling of terminal colors
 - **[crossterm](https://docs.rs/crossterm)** — Term manipulation for kb + mouse events
-- **[futures](https://docs.rs/futures)** — Extension of futures for async computation
+- **[ratatui](https://docs.rs/ratatui)** — Terminal user interface components
 - **[reqwest](https://docs.rs/reqwest)** — HTTP client
-- **[serde](https://docs.rs/serde)** — Deserialization of JSON responses
-- **[tokio](https://tokio.rs/)** — async runtime
-- **[tui-rs](https://docs.rs/tui)** — Terminal graphing
+- **[serde_json](https://docs.rs/serde_json)** — JSON serialization and deserialization
+- **[tokio](https://tokio.rs/)** — Async runtime
 
 ## Building
 

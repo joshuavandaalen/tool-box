@@ -130,6 +130,9 @@ struct App {
 
     // Whether the app should exit
     should_quit: bool,
+
+    // Reusable HTTP client (keeps connection pool alive across requests)
+    client: Client,
 }
 
 impl App {
@@ -145,6 +148,10 @@ impl App {
             focus: Focus::Url,
             status: Status::Idle,
             should_quit: false,
+            client: Client::builder()
+                .timeout(Duration::from_secs(30))
+                .build()
+                .expect("Failed to build HTTP client"),
         }
     }
 
@@ -440,19 +447,11 @@ async fn do_send(app: &mut App, tx: &tokio::sync::mpsc::Sender<Status>) {
     let method = app.method;
     app.status = Status::Sending;
 
-    let tx = tx.clone();
-    tokio::spawn(async move {
-        let result = send_request(url, method, body).await;
-        let _ = tx.send(result).await;
-    });
+    let result = send_request(&app.client, url, method, body).await;
+    let _ = tx.send(result).await;
 }
 
-async fn send_request(url: String, method: HttpMethod, body: String) -> Status {
-    let client = match Client::builder().timeout(Duration::from_secs(30)).build() {
-        Ok(c) => c,
-        Err(e) => return Status::Error(e.to_string()),
-    };
-
+async fn send_request(client: &Client, url: String, method: HttpMethod, body: String) -> Status {
     let req = match method {
         HttpMethod::Get => client.get(&url),
         HttpMethod::Post => client.post(&url),
@@ -471,13 +470,25 @@ async fn send_request(url: String, method: HttpMethod, body: String) -> Status {
 
     match req.send().await {
         Ok(resp) => {
-            let code = resp.status().as_u16();
+            let status = resp.status();
+            let code = status.as_u16();
             let raw = resp.text().await.unwrap_or_default();
             // Pretty-print JSON responses when possible
             let pretty = serde_json::from_str::<Value>(&raw)
                 .map(|v| serde_json::to_string_pretty(&v).unwrap_or(raw.clone()))
                 .unwrap_or(raw);
-            Status::Success { code, body: pretty }
+            if status.is_success() {
+                Status::Success { code, body: pretty }
+            } else {
+                let reason = status.canonical_reason().unwrap_or("Unknown Status");
+                Status::Error(format!(
+                    "HTTP {} {}{}{}",
+                    code,
+                    reason,
+                    if pretty.is_empty() { "" } else { ":\n\n" },
+                    pretty,
+                ))
+            }
         }
         Err(e) => Status::Error(e.to_string()),
     }
@@ -692,6 +703,14 @@ fn draw_status_bar(frame: &mut ratatui::Frame, app: &App, area: Rect) {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // Ensure terminal is restored even if the app panics
+    let original_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |panic_info| {
+        let _ = disable_raw_mode();
+        let _ = execute!(std::io::stdout(), LeaveAlternateScreen, DisableMouseCapture);
+        original_hook(panic_info);
+    }));
+
     enable_raw_mode()?;
     let mut stdout = std::io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
